@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inspect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #191918;
+    --text: #2b2b29;
+    --muted: #74726d;
+    --faint: #aeaca6;
+    --line: #ebeae6;
+    --soft: #f5f5f3;
+    --paper: #ffffff;
+    --lime: #e4f222;
+    --sans: "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    --ease: cubic-bezier(.22, 1, .36, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: var(--paper); color: var(--text); font: 14px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+
+  /* ---------- header ---------- */
+  header { height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 18px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 16px; }
+  .brand svg { width: 22px; height: 22px; display: block; }
+  .title { font-size: 16px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; transition: opacity .3s; }
+  .sp { flex: 1; }
+  .icons { display: flex; align-items: center; gap: 18px; color: #4a4946; }
+  .icons svg { width: 17px; height: 17px; display: block; }
+  .me { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg,#c99d76,#7a5236); color: #fff; font-size: 10.5px; font-weight: 600; display: grid; place-items: center; }
+
+  /* ---------- layout ---------- */
+  .app { display: grid; grid-template-columns: 1fr minmax(0, 700px) 1fr; height: calc(100% - 52px); }
+  .chat { display: flex; flex-direction: column; min-height: 0; }
+  .scroll { flex: 1; overflow-y: auto; padding: 36px 4px 20px; scrollbar-width: none; }
+  .side { padding: 22px 22px; max-width: 280px; }
+
+  /* ---------- entrance ---------- */
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); filter: blur(2px); } to { opacity: 1; transform: none; filter: none; } }
+  .rise { animation: rise .5s var(--ease) backwards; }
+
+  /* ---------- messages ---------- */
+  .user { display: flex; justify-content: flex-end; align-items: flex-start; gap: 10px; margin-bottom: 28px; }
+  .bubble { background: var(--soft); color: var(--ink); padding: 8px 13px; border-radius: 12px; max-width: 80%; white-space: pre-wrap; }
+  .uava { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg,#c99d76,#7a5236); flex: none; margin-top: 4px; }
+
+  .tool { margin: 0 0 12px 2px; color: var(--muted); font-size: 13.5px; }
+  .tool .k { margin-right: 7px; }
+  .tool code { font: 12.5px var(--mono); background: var(--soft); color: var(--ink); padding: 2px 6px; border-radius: 5px; }
+
+  /* ---------- the thinking line ---------- */
+  .thinking { display: flex; align-items: center; gap: 9px; margin: 6px 0 0 2px; height: 24px; }
+  .ithink { width: 20px; height: 20px; flex: none; display: block; animation: breathe 1.8s ease-in-out infinite; transform-origin: 50% 60%; }
+  @keyframes breathe {
+    0%, 100% { transform: scale(1) translateY(0); }
+    45%      { transform: scale(.8) translateY(1px); }
+    70%      { transform: scale(1.06) translateY(-1px); }
+  }
+  .ithink .eye { transform-origin: 11px 13.6px; animation: look 3.6s ease-in-out infinite; }
+  @keyframes look { 0%, 40%, 100% { transform: translateX(0); } 50%, 65% { transform: translateX(1.2px); } 75%, 90% { transform: translateX(-1.2px); } }
+
+  /* ---------- focus: blur everything but the thinking ---------- */
+  header, .side, .dock, .tool, .concept, .user { transition: filter .6s var(--ease), opacity .6s var(--ease); }
+  body.focus.busy header, body.focus.busy .side, body.focus.busy .dock,
+  body.focus.busy .tool, body.focus.busy .concept { filter: blur(3px); opacity: .4; }
+  body.focus.busy .user { filter: blur(1.5px); opacity: .55; }
+
+  /* ---------- demo controls ---------- */
+  .ctrl { position: fixed; right: 16px; bottom: 14px; display: flex; gap: 6px; z-index: 5; }
+  .seg { display: inline-flex; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 3px; box-shadow: 0 6px 20px -12px rgba(0,0,0,.25); }
+  .seg button { font: 500 12.5px var(--sans); border: 0; background: transparent; color: var(--muted); padding: 6px 11px; border-radius: 7px; cursor: pointer; transition: background .2s, color .2s; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .verbs { position: relative; height: 24px; flex: 1; overflow: hidden; }
+  .verb {
+    position: absolute; left: 0; top: 0; white-space: nowrap; font-size: 14px; line-height: 24px;
+    background: linear-gradient(100deg, #8d8b86 0%, #8d8b86 35%, #e2e0db 50%, #8d8b86 65%, #8d8b86 100%);
+    background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: shimmer 2.4s linear infinite;
+  }
+  .verb.in  { animation: shimmer 2.4s linear infinite, vin .55s var(--ease) both; }
+  .verb.out { animation: shimmer 2.4s linear infinite, vout .45s var(--ease) both; }
+  @keyframes vin  { from { transform: translateY(70%); opacity: 0; filter: blur(3px); } to { transform: none; opacity: 1; filter: none; } }
+  @keyframes vout { from { transform: none; opacity: 1; filter: none; } to { transform: translateY(-70%); opacity: 0; filter: blur(3px); } }
+  @keyframes shimmer { from { background-position: 125% 0; } to { background-position: -125% 0; } }
+  .elapsed { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+  /* ---------- composer ---------- */
+  .dock { padding: 0 4px 20px; position: relative; }
+  .composer { border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 8px 30px -16px rgba(0,0,0,.18); background: var(--paper); overflow: hidden; transition: border-color .2s, box-shadow .2s; }
+  .composer:focus-within { border-color: #dcdad5; box-shadow: 0 10px 34px -16px rgba(0,0,0,.24); }
+  .composer textarea { width: 100%; border: 0; outline: 0; resize: none; font: 14px/1.5 var(--sans); color: var(--ink); padding: 13px 15px 2px; height: 72px; background: transparent; }
+  .composer textarea::placeholder { color: #a3a19c; }
+  .crow { display: flex; justify-content: flex-end; align-items: center; gap: 14px; padding: 2px 12px 10px; color: #5c5a56; }
+  .crow svg { width: 16px; height: 16px; display: block; }
+  .send { border: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--soft); color: #b2b0aa; cursor: pointer; display: grid; place-items: center; transition: background .2s, color .2s, transform .2s var(--ease); }
+  .send.on { background: var(--ink); color: #fff; }
+  .send:active { transform: scale(.92); }
+  .cfoot { display: flex; justify-content: space-between; align-items: center; padding: 9px 15px; background: #fafaf9; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink); }
+  .cfoot span { display: inline-flex; align-items: center; gap: 6px; }
+  .cfoot .chev { color: var(--faint); font-size: 10px; }
+
+  /* ---------- "/" verb palette ---------- */
+  .palette {
+    position: absolute; left: 4px; right: 4px; bottom: calc(100% - 8px);
+    background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 16px 40px -18px rgba(0,0,0,.25); padding: 6px; max-height: 300px; overflow-y: auto;
+    opacity: 0; transform: translateY(6px) scale(.99); pointer-events: none;
+    transition: opacity .2s, transform .25s var(--ease);
+  }
+  .palette.open { opacity: 1; transform: none; pointer-events: auto; }
+  .palette .hd { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--faint); text-transform: uppercase; letter-spacing: .06em; padding: 6px 8px 8px; }
+  .palette .it { display: flex; align-items: center; gap: 9px; padding: 6px 8px; border-radius: 7px; font-size: 13.5px; color: var(--ink); cursor: default; }
+  .palette .it:hover, .palette .it.sel { background: var(--soft); }
+  .palette .it svg { width: 12px; height: 12px; color: var(--faint); flex: none; }
+  .palette mark { background: #f4f8b8; color: inherit; border-radius: 2px; }
+  .palette .empty { padding: 10px 8px; color: var(--faint); font-size: 13px; }
+
+  /* ---------- sidebar ---------- */
+  .meta { list-style: none; display: grid; gap: 8px; font-size: 13px; color: #4b4a46; }
+  .meta li { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .meta li span.trunc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .meta svg { width: 14px; height: 14px; color: #7a7872; flex: none; }
+  .badge { border-radius: 999px; font-size: 11px; padding: 0 7px; line-height: 18px; display: none; }
+  .badge.run { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #e6dc8a; color: #776c12; background: #fbfae8; }
+  .badge.run::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #b8a900; animation: blink 1.4s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+  .fc { margin-top: 20px; font-size: 13px; }
+  .fc h4 { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+  .fc .none { color: var(--faint); font-size: 12.5px; }
+
+  .concept { position: fixed; left: 14px; bottom: 10px; font-size: 11px; color: #c4c2bd; }
+
+  @media (max-width: 1080px) { .app { grid-template-columns: minmax(0,1fr); padding: 0 16px; } .gutter, .side { display: none; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 22 22" aria-hidden="true"><rect width="22" height="22" rx="6" fill="#26231f"/><rect x="3.5" y="3" width="15" height="6.5" rx="3" fill="#3b352d"/><circle cx="11" cy="13.6" r="4.7" fill="#0f0f0f"/><circle cx="11" cy="13.6" r="3.4" fill="none" stroke="#e4f222" stroke-width="1.4"/><circle cx="12.3" cy="12.5" r="1" fill="#fff"/></svg>
+    Inspect
+  </div>
+  <div class="title" id="title">New session</div>
+  <div class="sp"></div>
+  <div class="icons" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><path fill="#2f7fd6" d="M17.5 2 9 10.2 4.2 6.5 2 7.6v8.8l2.2 1.1L9 13.8l8.5 8.2L22 20V4z M4.5 9.5 7 12l-2.5 2.5z M17.5 16.6 12 12l5.5-4.6z"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m5 7 5 5-5 5M12 18h7"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    <div class="me">EZ</div>
+  </div>
+</header>
+
+<div class="app">
+  <div class="gutter"></div>
+
+  <section class="chat">
+    <div class="scroll" id="scroll"></div>
+    <div class="dock">
+      <div class="palette" id="palette" role="listbox" aria-label="Loading verbs"></div>
+      <div class="composer">
+        <textarea id="input" placeholder="/ for skills, # for sessions" autofocus></textarea>
+        <div class="crow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="m20 11-8.5 8.5a5 5 0 0 1-7-7L13 4a3.3 3.3 0 0 1 4.7 4.7L9.2 17.2a1.7 1.7 0 0 1-2.4-2.4L14.5 7"/></svg>
+          <button class="send" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+        </div>
+        <div class="cfoot">
+          <span id="model">Claude Opus 5.5 <span class="chev">⌃</span></span>
+          <span>✳ Build <span class="chev">⌃</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <ul class="meta">
+      <li><span class="uava" style="width:14px;height:14px;margin:0"></span>Ethan Zhou</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>just now</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></svg><span class="model-name">Claude Opus 5.5</span></li>
+      <li><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>Ramp Inspect <span class="badge" id="badge">Running</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-6 3-11.5 7"/></svg><span class="trunc" id="branch">…inspect-new-session</span></li>
+    </ul>
+    <div class="fc">
+      <h4>Files changed</h4>
+      <div class="none">No changes yet</div>
+    </div>
+  </aside>
+</div>
+
+<div class="concept">concept by Ethan Zhou · not an official Ramp product</div>
+
+<div class="ctrl">
+  <div class="seg" role="group" aria-label="Verb style">
+    <button id="before" aria-pressed="false">Before</button>
+    <button id="after" aria-pressed="true">After</button>
+  </div>
+  <div class="seg"><button id="focus" aria-pressed="true">Focus</button></div>
+</div>
+
+<script>
+/* ================= EDIT ME ================= */
+const MODEL = "Claude Opus 5.5";
+const VERB_INTERVAL_MS = 2000;   // how long each verb stays up
+const TOOL_STEPS = 3;            // tool lines shown before it settles into thinking
+const VERBS = [
+  "Reconciling…", "Expensifying…", "Receipt-wrangling…", "Auto-categorizing…",
+  "Matching to the GL…", "Closing the books…", "Accruing…", "Amortizing…",
+  "Depreciating gracefully…", "Chasing receipts…", "Flagging an out-of-policy latte…",
+  "Footing and cross-footing…", "Squaring the ledger…", "Double-entrying…",
+  "Rounding to the nearest cent…", "Net-thirtying…", "Splitting the bill…",
+  "Saving you 5%…", "Escaping the expense report…", "Capitalizing (responsibly)…",
+  "Lallygagging, under budget…", "Approving, pending vibes…",
+  // the whimsical ones
+  "Whatchamacalliting…", "Philosophizing about accruals…", "Percolating…",
+  "Noodling on the ledger…", "Discombobulating, then recombobulating…",
+  "Moseying through the monorepo…", "Ruminating…", "Hmm-ing…",
+  "Bamboozling the linter…", "Consulting the spreadsheet oracle…",
+  "Shimmying past merge conflicts…", "Kerfuffling…", "Pontificating…",
+  "Tallying the doohickeys…", "Befriending the type checker…"
+];
+const BEFORE = ["Thinking…"];      // what the "Before" button shows
+/* =========================================== */
+
+const $ = (id) => document.getElementById(id);
+const scroll = $("scroll"), input = $("input"), send = $("send"), palette = $("palette");
+document.querySelectorAll(".model-name").forEach(n => n.textContent = MODEL);
+$("model").firstChild.textContent = MODEL + " ";
+
+const SPARK = `<svg class="spark" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c.5 4.6 2.4 7.5 10 10-7.6 2.5-9.5 5.4-10 10-.5-4.6-2.4-7.5-10-10 7.6-2.5 9.5-5.4 10-10z"/></svg>`;
+const MASCOT = `<svg class="ithink" viewBox="0 0 22 22" aria-hidden="true"><rect width="22" height="22" rx="6" fill="#26231f"/><rect x="3.5" y="3" width="15" height="6.5" rx="3" fill="#3b352d"/><g class="eye"><circle cx="11" cy="13.6" r="4.7" fill="#0f0f0f"/><circle cx="11" cy="13.6" r="3.4" fill="none" stroke="#e4f222" stroke-width="1.4"/><circle cx="12.3" cy="12.5" r="1" fill="#fff"/></g></svg>`;
+let mode = "after";
+const pool = () => (mode === "after" ? VERBS : BEFORE);
+const esc = (s) => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 28) || "session";
+
+let timers = [];
+const clearAll = () => { timers.forEach(t => { clearInterval(t); clearTimeout(t); }); timers = []; };
+
+function keyword(prompt) {
+  const words = prompt.match(/[A-Za-z][A-Za-z0-9_]{3,}/g) || ["Component"];
+  const camel = words.filter(x => /[a-z][A-Z]/.test(x) && !x.includes("_"));
+  const plain = words.filter(x => !x.includes("_"));
+  const w = (camel.length ? camel : plain.length ? plain : words).sort((a, b) => b.length - a.length)[0];
+  return w.includes("_") ? w : w[0].toUpperCase() + w.slice(1);
+}
+function toolsFor(prompt) {
+  const K = esc(keyword(prompt));
+  return [
+    `<span class="k">Glob</span><code>**/*${K}*</code>`,
+    `<span class="k">Grep</span><code>${K.toLowerCase()}|${K}</code>`,
+    `<span class="k">Read</span><code>${K}.tsx</code>, <code>${K}.test.tsx</code>, <code>index.ts</code>`,
+  ].slice(0, TOOL_STEPS);
+}
+
+function add(html, cls, before) {
+  const d = document.createElement("div");
+  d.className = cls + " rise"; d.innerHTML = html;
+  before ? scroll.insertBefore(d, before) : scroll.appendChild(d);
+  scroll.scrollTo({ top: scroll.scrollHeight, behavior: "smooth" });
+  return d;
+}
+
+function startThinking(think) {
+  const box = think.querySelector(".verbs"), clock = think.querySelector(".elapsed");
+  let order = shuffle(pool()), i = 0;
+  const show = (text, first) => {
+    const cur = box.querySelector(".verb:not(.out)");
+    if (cur && cur.textContent === text) return;   // "Before" mode: don't re-animate the same word
+    box.querySelectorAll(".verb.out").forEach(n => n.remove());
+    const old = box.querySelector(".verb");
+    const el = document.createElement("span");
+    el.className = first ? "verb" : "verb in"; el.textContent = text;
+    box.appendChild(el);
+    if (old) { old.className = "verb out"; setTimeout(() => old.remove(), 460); }
+  };
+  show(order[0], true);
+  const t0 = performance.now();
+  timers.push(setInterval(() => {
+    i++; if (i >= order.length) { order = shuffle(pool()); i = 0; }
+    show(order[i]);
+  }, VERB_INTERVAL_MS));
+  think.restyle = () => { order = shuffle(pool()); i = 0; show(order[0]); };
+  timers.push(setInterval(() => {
+    const s = Math.floor((performance.now() - t0) / 1000);
+    clock.textContent = s < 60 ? s + "s" : Math.floor(s / 60) + "m " + (s % 60) + "s";
+  }, 250));
+}
+
+function submit() {
+  const text = input.value.trim();
+  if (!text || text.startsWith("/")) return;
+  clearAll(); closePalette();
+  input.value = ""; send.classList.remove("on");
+
+  const old = scroll.querySelector(".thinking"); if (old) old.remove();
+  if (!scroll.querySelector(".user")) {
+    $("title").textContent = text.length > 64 ? text.slice(0, 61) + "…" : text;
+    $("branch").textContent = "…inspect-" + slug(text) + "-" + (1000 + Math.random() * 9000 | 0);
+  }
+  $("badge").className = "badge run";
+  document.body.classList.add("busy");
+
+  add(`<div class="bubble">${esc(text)}</div><span class="uava"></span>`, "user");
+  const think = add(`${MASCOT}<div class="verbs"></div><span class="elapsed">0s</span>`, "thinking");
+  startThinking(think);
+
+  toolsFor(text).forEach((t, n) => timers.push(setTimeout(() => add(t, "tool", think), 1400 * (n + 1))));
+}
+
+/* ---------- "/" palette: search every verb ---------- */
+let sel = 0, shown = [];
+function renderPalette(q) {
+  shown = VERBS.filter(v => v.toLowerCase().includes(q.toLowerCase()));
+  sel = Math.min(sel, Math.max(shown.length - 1, 0));
+  const hi = (v) => q ? esc(v).replace(new RegExp("(" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig"), "<mark>$1</mark>") : esc(v);
+  palette.innerHTML = `<div class="hd"><span>Loading verbs</span><span>${shown.length}/${VERBS.length}</span></div>` +
+    (shown.length ? shown.map((v, i) => `<div class="it${i === sel ? " sel" : ""}" role="option">${SPARK.replace('class="spark"', "")}${hi(v)}</div>`).join("")
+                  : `<div class="empty">No verbs match “${esc(q)}”</div>`);
+  const s = palette.querySelector(".it.sel"); if (s) s.scrollIntoView({ block: "nearest" });
+}
+function openPalette(q) { palette.classList.add("open"); renderPalette(q); }
+function closePalette() { palette.classList.remove("open"); }
+
+input.addEventListener("input", () => {
+  const v = input.value;
+  send.classList.toggle("on", !!v.trim() && !v.startsWith("/"));
+  if (v.startsWith("/")) { sel = 0; openPalette(v.slice(1)); } else closePalette();
+});
+input.addEventListener("keydown", (e) => {
+  const open = palette.classList.contains("open");
+  if (open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+    e.preventDefault(); sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + shown.length) % Math.max(shown.length, 1); renderPalette(input.value.slice(1)); return;
+  }
+  if (open && e.key === "Escape") { input.value = ""; closePalette(); return; }
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!open) submit(); }
+});
+send.addEventListener("click", submit);
+
+/* ---------- demo controls ---------- */
+document.body.classList.add("focus");
+function setMode(m) {
+  mode = m;
+  $("before").setAttribute("aria-pressed", m === "before");
+  $("after").setAttribute("aria-pressed", m === "after");
+  const t = scroll.querySelector(".thinking"); if (t && t.restyle) t.restyle();
+}
+$("before").onclick = () => setMode("before");
+$("after").onclick = () => setMode("after");
+$("focus").onclick = () => {
+  const on = document.body.classList.toggle("focus");
+  $("focus").setAttribute("aria-pressed", on);
+};
+</script>
+</body>
+</html>
